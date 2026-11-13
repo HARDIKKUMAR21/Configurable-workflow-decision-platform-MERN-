@@ -1,0 +1,35 @@
+{
+  "id": "application-approval",
+  "version": 2,
+  "name": "Application approval (strict)",
+  "description": "An example rule change: minimum credit 650 and review above 7500.",
+  "retryPolicy": { "maxAttempts": 5, "initialDelayMs": 1000 },
+  "input": {
+    "applicantId": { "type": "string", "required": true, "minLength": 1 },
+    "amount": { "type": "number", "required": true, "min": 0 },
+    "creditScore": { "type": "number", "required": true, "min": 0, "max": 850 },
+    "documentsComplete": { "type": "boolean", "required": true },
+    "dependencyMode": { "type": "string", "enum": ["ok", "fail-once", "fail-always"] }
+  },
+  "exampleInput": { "applicantId": "A-100", "amount": 4000, "creditScore": 720, "documentsComplete": true, "dependencyMode": "ok" },
+  "stages": [
+    {
+      "id": "eligibility",
+      "type": "rules",
+      "rules": [
+        { "id": "documents-present", "field": "input.documentsComplete", "op": "eq", "value": true, "onFail": "REJECTED", "reason": "Required documents are incomplete" },
+        { "id": "minimum-credit", "field": "input.creditScore", "op": "gte", "value": 650, "onFail": "REJECTED", "reason": "Credit score is below the minimum" }
+      ]
+    },
+    { "id": "risk-check", "type": "dependency", "adapter": "risk-score" },
+    {
+      "id": "risk-and-routing",
+      "type": "rules",
+      "rules": [
+        { "id": "risk-limit", "field": "context.riskScore", "op": "lte", "value": 70, "onFail": "REJECTED", "reason": "External risk score exceeds the limit" },
+        { "id": "high-value-review", "kind": "branch", "field": "input.amount", "op": "gt", "value": 7500, "onPass": "MANUAL_REVIEW", "reason": "High value applications need human review" }
+      ]
+    }
+  ],
+  "defaultOutcome": "APPROVED"
+}

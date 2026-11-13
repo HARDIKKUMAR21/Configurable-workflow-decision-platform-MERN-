@@ -1,0 +1,25 @@
+{
+  "id": "vendor-approval",
+  "version": 1,
+  "name": "Vendor approval",
+  "description": "A second use case using the same engine, including a conditional rule.",
+  "input": {
+    "vendorId": { "type": "string", "required": true, "minLength": 1 },
+    "contractValue": { "type": "number", "required": true, "min": 0 },
+    "taxVerified": { "type": "boolean", "required": true },
+    "insuranceVerified": { "type": "boolean", "required": true }
+  },
+  "exampleInput": { "vendorId": "V-100", "contractValue": 20000, "taxVerified": true, "insuranceVerified": true },
+  "stages": [
+    {
+      "id": "vendor-checks",
+      "type": "rules",
+      "rules": [
+        { "id": "tax-verified", "field": "input.taxVerified", "op": "eq", "value": true, "onFail": "REJECTED", "reason": "Tax verification is required" },
+        { "id": "insurance-for-large-contract", "when": { "field": "input.contractValue", "op": "gt", "value": 50000 }, "field": "input.insuranceVerified", "op": "eq", "value": true, "onFail": "MANUAL_REVIEW", "reason": "Large contracts need verified insurance" },
+        { "id": "large-contract-review", "kind": "branch", "field": "input.contractValue", "op": "gt", "value": 100000, "onPass": "MANUAL_REVIEW", "reason": "Large contracts need human approval" }
+      ]
+    }
+  ],
+  "defaultOutcome": "APPROVED"
+}
